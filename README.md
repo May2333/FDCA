@@ -25,6 +25,9 @@ pip install -r requirements.txt
 
 # Data Preparation
 
+## Original video frames
+We will upload original video frames as soon as possible.
+
 ## Directory Structure Setup
 
 (1) Set dataset path environment variable:

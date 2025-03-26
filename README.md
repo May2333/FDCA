@@ -25,7 +25,7 @@ pip install -r requirements.txt
 
 # Data Preparation
 
-## Original video frames
+## Original Video Frames
 We will upload original video frames as soon as possible.
 
 ## Directory Structure Setup

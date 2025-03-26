@@ -41,19 +41,21 @@ tar -xf CLIP_RN50x4_high_8_640.tar -C $FINECVR_DATASET_ROOT/FineCVR/embeddings/
 ```
 (4) Final directory structure should be:
 
-$FINECVR_DATASET_ROOT/<br>
-└── FineCVR/<br>
-    ├── annotations/<br>
-    │   ├── train.txt<br>
-    │   ├── test.txt<br>
-	│   ├── train_remaped.txt<br>
-	│   ├── test_remaped.txt<br>
-	│   ├── id2vdoname_train.json<br>
-	│   ├── id2vdoname_test.json<br>
-	│   ├── vdoname2id_train.json<br>
-	│   └── vdoname2id_test.json<br>
-    └── embeddings/<br>
-        └── CLIP_RN50x4_high_8_640/<br>
+```
+$FINECVR_DATASET_ROOT/
+└── FineCVR/
+    ├── annotations/
+    │   ├── train.txt
+    │   ├── test.txt
+    │   ├── train_remaped.txt
+    │   ├── test_remaped.txt
+    │   ├── id2vdoname_train.json
+    │   ├── id2vdoname_test.json
+    │   ├── vdoname2id_train.json
+    │   └── vdoname2id_test.json
+    └── embeddings/
+        └── CLIP_RN50x4_high_8_640/
+```
 
 # Training
 Train FDCA:

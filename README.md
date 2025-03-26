@@ -70,7 +70,7 @@ python combiner_train.py \
 # Validation
 Validate with pretrained model (ensure model file exists):
 ```
-python src/validate.py \
+python validate.py \
     --data_pth $FINECVR_DATASET_ROOT/FineCVR \
     --combiner-path saved_models/combiner_arithmetic.pt  # Update to actual model path
 ```

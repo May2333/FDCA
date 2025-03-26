@@ -58,6 +58,7 @@ def combiner_training_composedvideo(projection_dim: int, hidden_dim: int, num_ep
     training_start = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
     training_path: Path = Path(
         base_path / f"models/version_11/{clip_model_name}/{args.save_name}")
+    print("models are saved in:{}".format(training_path))
     if not os.path.exists(training_path):
         os.makedirs(training_path)
 
@@ -93,13 +94,13 @@ def combiner_training_composedvideo(projection_dim: int, hidden_dim: int, num_ep
     clip_model = clip_model.float()
 
     # Define the validation datasets and extract the validation index features
-    relative_val_dataset = ComposedVideoDataset('val', 'relative', preprocess, dataset_pth=args.data_pth, dataset_op=args.dataset_op)
-    classic_val_dataset = ComposedVideoDataset('val', 'classic', preprocess, dataset_pth=args.data_pth, dataset_op=args.dataset_op)
+    relative_val_dataset = ComposedVideoDataset('val', 'relative', preprocess, dataset_pth=args.data_pth)
+    classic_val_dataset = ComposedVideoDataset('val', 'classic', preprocess, dataset_pth=args.data_pth)
     val_index_features, val_index_names = extract_index_features(classic_val_dataset, clip_model)
 
     # Define the combiner and the train dataset
     combiner = Combiner(feature_dim, projection_dim, hidden_dim, clip_model=clip_model).to(device, non_blocking=True)
-    relative_train_dataset = ComposedVideoDataset('train', 'relative', preprocess, dataset_pth=args.data_pth, dataset_op=args.dataset_op)
+    relative_train_dataset = ComposedVideoDataset('train', 'relative', preprocess, dataset_pth=args.data_pth)
     relative_train_loader = DataLoader(dataset=relative_train_dataset, batch_size=batch_size, num_workers=4,
                                        pin_memory=True, collate_fn=collate_fn, drop_last=True, shuffle=True)
 
@@ -150,7 +151,7 @@ def combiner_training_composedvideo(projection_dim: int, hidden_dim: int, num_ep
 
                 # Compute the logits and loss
                 with torch.cuda.amp.autocast():
-                    logits, token_logist, logits_2, _, _, triplet_loss = combiner((reference_feas, reference_middle_feas), (text_inputs, text_inputs_wo_neg), (target_feas, target_middle_feas))
+                    logits, token_logist, logits_2, triplet_loss = combiner((reference_feas, reference_middle_feas), (text_inputs, text_inputs_wo_neg), (target_feas, target_middle_feas))
                     ground_truth = torch.arange(images_in_batch, dtype=torch.long, device=device)
                     loss = crossentropy_criterion(logits, ground_truth)
                     loss_token = crossentropy_criterion(token_logist, ground_truth)
@@ -227,9 +228,6 @@ if __name__ == '__main__':
     parser.add_argument("--dataset", type=str, default='FineCVR', help="should be 'FineCVR'")
     parser.add_argument("--data_pth", type=str, default="FINECVR_PATH_ROOT",
                         help="the dataset's path")
-    parser.add_argument("--dataset_op", type=str,
-                        default="caption_by_CLIP__objects_scenes_attributes_threshold_0.17_version_11",
-                        help="the dataset's option")
     parser.add_argument("--api-key", type=str, help="api for Comet logging")
     parser.add_argument("--workspace", type=str, help="workspace of Comet logging")
     parser.add_argument("--experiment-name", type=str, help="name of the experiment on Comet")
@@ -253,7 +251,7 @@ if __name__ == '__main__':
                         help="Save only the best model during training")
 
     args = parser.parse_args()
-    if args.dataset.lower() not in ['FineCVR']:
+    if args.dataset.lower() not in ['finecvr']:
         raise ValueError("Dataset should be 'FineCVR'")
 
     training_hyper_params = {

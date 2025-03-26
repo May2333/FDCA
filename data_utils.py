@@ -13,7 +13,7 @@ import numpy as np
 import os
 import h5py
 
-base_path = Path(__file__).absolute().parents[1].absolute()
+base_path = Path(__file__).absolute().parents[0].absolute()
 
 
 def _convert_image_to_rgb(image):
@@ -112,7 +112,7 @@ class ComposedVideoDataset(Dataset):
                 - (pair_id, reference_name, rel_caption, group_members) when split == test1
     """
 
-    def __init__(self, split: str, mode: str, preprocess: callable, dataset_pth, dataset_op):
+    def __init__(self, split: str, mode: str, preprocess: callable, dataset_pth):
         """
         :param split: dataset split, should be in ['test', 'train', 'val']
         :param mode: dataset mode, should be in ['relative', 'classic']:
@@ -150,7 +150,7 @@ class ComposedVideoDataset(Dataset):
             content = file.read()
             self.id2vdoname = json.loads(content)
             
-        self.feature_path = os.path.join(self.dataset_root, "CLIP_RN50x4_high_8_640")
+        self.feature_path = os.path.join(self.dataset_root, "embbedings/CLIP_RN50x4_high_8_640")
         print(f"FineCVR {split} dataset in {mode} mode initialized")
 
 

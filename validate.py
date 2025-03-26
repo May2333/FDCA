@@ -173,9 +173,9 @@ def val_retrieval(combining_function: callable, clip_model: CLIP, preprocess: ca
     clip_model = clip_model.float().eval()
 
     # Define the validation datasets and extract the index features
-    classic_val_dataset = ComposedVideoDataset('test', 'classic', preprocess, args.data_pth, args.dataset_op)
+    classic_val_dataset = ComposedVideoDataset('val', 'classic', preprocess, args.data_pth)
     index_features, index_names = extract_index_features(classic_val_dataset, clip_model)
-    relative_val_dataset = ComposedVideoDataset('test', 'relative', preprocess, args.data_pth, args.dataset_op)
+    relative_val_dataset = ComposedVideoDataset('val', 'relative', preprocess, args.data_pth)
 
     return compute_val_metrics(relative_val_dataset, clip_model, index_features, index_names,
                                     combining_function, combiner)
@@ -186,12 +186,9 @@ def main():
     parser.add_argument("--dataset", default='FineCVR', type=str, help="should be FineCVR")
     parser.add_argument("--data_pth", type=str, default="FineCVR",
                         help="the dataset's path")
-    parser.add_argument("--dataset_op", type=str,
-                        default="caption_by_CLIP__objects_scenes_attributes_threshold_0.17_version_11",
-                        help="the dataset's option")
     parser.add_argument("--combining-function", type=str, default='combiner',
                         help="Which combining function use, should be in ['combiner', 'sum']")
-    parser.add_argument("--combiner-path", type=Path,  default="video_retrieval/version_3/models/version_11/RN50x4/version9_wo_fine_cluster/saved_models/combiner_arithmetic.pt", help="path to trained Combiner")
+    parser.add_argument("--combiner-path", type=Path,  default="saved_models/combiner_arithmetic.pt", help="path to trained Combiner")
     parser.add_argument("--projection-dim", default=640 * 4, type=int, help='Combiner projection dim')
     parser.add_argument("--hidden-dim", default=640 * 8, type=int, help="Combiner hidden dim")
     parser.add_argument("--clip-model-name", default="RN50x4", type=str, help="CLIP model to use, e.g 'RN50', 'RN50x4'")

@@ -1,1 +1,1 @@
-CUDA_VISIBLE_DEVICES="5" python  combiner_train.py --dataset ComposedVideo --save-best --save-training
+CUDA_VISIBLE_DEVICES="5" python  combiner_train.py --dataset FineCVR --save-best --save-training --data_pth FineCVR

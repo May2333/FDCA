@@ -12,21 +12,44 @@ With the explosive growth of video data, finding videos that meet detailed requi
 
 # Installation
 
-We will update soon..
+```
+conda create -n combiner python==3.8
+conda activate combiner
+pip install -r requirements.txt
+```
 
 # Data Preparation
 
-We will update soon..
+## Directory Structure Setup
+Create the dataset directory with the following structure:
+FineCVR/
+├── annotations/
+└── embeddings/
+
+## Annotation Files
+
+[Download Link](https://drive.google.com/drive/folders/1SneQu9pUhvWmehGxn_Y8YB0JGaa-XfAv?usp=drive_link): 
+
+## Embeddings Files
+
+[Download Link](https://drive.google.com/drive/folders/1m6zM0udCj8LThWsiMAtsQBFEWAmMucTI?usp=drive_link): 
 
 # Training
+Set dataset path environment variable:
+```bash
+export FINECVR_DATASET_ROOT=/your/actual/dataset/path
 ```
-sh run.sh
+Run:
+```
+python combiner_train.py --dataset FineCVR --data_pth $FINECVR_DATASET_ROOT/FineCVR --save-best --save-training
 ```
 
 # Validation
 ```
-python src/validate.py 
+python src/validate.py --data_pth $FINECVR_DATASET_ROOT/FineCVR --combiner-path FDCA/saved_models/combiner_arithmetic.pt 
 ```
+
+
 # Cite
 
 If you use our dataset or method in your research, please cite our paper:
@@ -38,3 +61,6 @@ If you use our dataset or method in your research, please cite our paper:
         year = {2025}
     }
 ```
+
+# Acknowledgement
+This repository is built based on [CLIP4Cir](https://github.com/ABaldrati/CLIP4Cir) repository.

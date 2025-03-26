@@ -20,7 +20,7 @@ from data_utils import base_path, squarepad_transform, targetpad_transform, Comp
 from combiner import Combiner
 from utils import collate_fn, update_train_running_results, set_train_bar_description, save_model, \
     extract_index_features, generate_randomized_fiq_caption, device
-from validate import compute_cirr_val_metrics
+from validate import compute_val_metrics
 from pytorch_transformers import BertModel, BertConfig, BertTokenizer
 from model.clip import _transform, load
 
@@ -38,7 +38,7 @@ def combiner_training_composedvideo(projection_dim: int, hidden_dim: int, num_ep
                            combiner_lr: float, batch_size: int, clip_bs: int, validation_frequency: int, transform: str,
                            save_training: bool, save_best: bool, **kwargs):
     """
-    Train the Combiner on CIRR dataset keeping frozen the CLIP model
+    Train the Combiner on dataset keeping frozen the CLIP model
     :param projection_dim: Combiner projection dimension
     :param hidden_dim: Combiner hidden dimension
     :param num_epochs: number of epochs
@@ -105,7 +105,6 @@ def combiner_training_composedvideo(projection_dim: int, hidden_dim: int, num_ep
 
     # Save all the hyperparameters on a file
     training_hyper_params['model'] = str(combiner)
-    os.system("cp -r ../src {}".format(os.path.join(training_path)))
     with open(training_path / "training_hyperparameters.json", 'w+') as file:
         json.dump(training_hyper_params, file, sort_keys=True, indent=4)
 
@@ -127,10 +126,9 @@ def combiner_training_composedvideo(projection_dim: int, hidden_dim: int, num_ep
     lossmetric = nn.MSELoss()
     # Start with the training loop
     print('Training loop started')
-    # tokenizer = BertTokenizer.from_pretrained('bert/bert-base-uncased-vocab.txt')
     combiner.clip_model.requires_grad = False
     for epoch in range(num_epochs):
-        if torch.cuda.is_available():  # RuntimeError: "slow_conv2d_cpu" not implemented for 'Half'
+        if torch.cuda.is_available():  
             clip.model.convert_weights(clip_model)  # Convert CLIP model in fp16 to reduce computation and memory
         with experiment.train():
             train_running_results = {'images_in_epoch': 0, 'accumulated_train_loss': 0}
@@ -149,13 +147,10 @@ def combiner_training_composedvideo(projection_dim: int, hidden_dim: int, num_ep
                 text_inputs = clip.tokenize(captions, truncate=True).to(device, non_blocking=True)
                 text_inputs_wo_neg = clip.tokenize(captions_wo_neg, truncate=True).to(device, non_blocking=True)
 
-                # Extract the features with CLIP
-
-
 
                 # Compute the logits and loss
                 with torch.cuda.amp.autocast():
-                    logits, token_logist, logits_2, remained_loss, remained_loss_2, triplet_loss = combiner((reference_feas, reference_middle_feas), (text_inputs, text_inputs_wo_neg), (target_feas, target_middle_feas))
+                    logits, token_logist, logits_2, _, _, triplet_loss = combiner((reference_feas, reference_middle_feas), (text_inputs, text_inputs_wo_neg), (target_feas, target_middle_feas))
                     ground_truth = torch.arange(images_in_batch, dtype=torch.long, device=device)
                     loss = crossentropy_criterion(logits, ground_truth)
                     loss_token = crossentropy_criterion(token_logist, ground_truth)
@@ -190,7 +185,7 @@ def combiner_training_composedvideo(projection_dim: int, hidden_dim: int, num_ep
                     combiner.eval()
 
                     # Compute and log validation metrics
-                    results = compute_cirr_val_metrics(relative_val_dataset, clip_model, val_index_features,
+                    results = compute_val_metrics(relative_val_dataset, clip_model, val_index_features,
                                                        val_index_names, combiner.combine_features, combiner)
                     group_recall_at1, group_recall_at2, group_recall_at3, recall_at1, recall_at5, recall_at10, recall_at50 = results
                     print(results)
@@ -223,20 +218,14 @@ def combiner_training_composedvideo(projection_dim: int, hidden_dim: int, num_ep
                         if save_best and results_dict['arithmetic_mean'] > best_arithmetic:
                             best_arithmetic = results_dict['arithmetic_mean']
                             save_model('combiner_arithmetic', epoch, combiner, training_path)
-                        # if save_best and results_dict['harmonic_mean'] > best_harmonic:
-                        #     best_harmonic = results_dict['harmonic_mean']
-                        #     save_model('combiner_harmonic', epoch, combiner, training_path)
-                        # if save_best and results_dict['geometric_mean'] > best_geometric:
-                        #     best_geometric = results_dict['geometric_mean']
-                        #     save_model('combiner_geometric', epoch, combiner, training_path)
                         if not save_best:
                             save_model(f'combiner_{epoch}', epoch, combiner, training_path)
 
 
 if __name__ == '__main__':
     parser = ArgumentParser()
-    parser.add_argument("--dataset", type=str, default='ComposedVideo', help="should be either 'CIRR' or 'fashionIQ'")
-    parser.add_argument("--data_pth", type=str, default="/data/composed_dataset",
+    parser.add_argument("--dataset", type=str, default='FineCVR', help="should be 'FineCVR'")
+    parser.add_argument("--data_pth", type=str, default="FINECVR_PATH_ROOT",
                         help="the dataset's path")
     parser.add_argument("--dataset_op", type=str,
                         default="caption_by_CLIP__objects_scenes_attributes_threshold_0.17_version_11",
@@ -246,7 +235,7 @@ if __name__ == '__main__':
     parser.add_argument("--experiment-name", type=str, help="name of the experiment on Comet")
     parser.add_argument("--projection-dim", default=640 * 4, type=int, help='Combiner projection dim')
     parser.add_argument("--hidden-dim", default=640 * 8, type=int, help="Combiner hidden dim")
-    parser.add_argument("--num-epochs", default=300, type=int, help="number training epochs")
+    parser.add_argument("--num-epochs", default=30, type=int, help="number training epochs")
     parser.add_argument("--clip-model-name", default="RN50x4", type=str, help="CLIP model to use, e.g 'RN50', 'RN50x4'")
     parser.add_argument("--clip-model-path", type=str, help="Path to the fine-tuned CLIP model")
     parser.add_argument("--combiner-lr", default=1e-4, type=float, help="Combiner learning rate")
@@ -260,12 +249,12 @@ if __name__ == '__main__':
                         help="Whether save the training model")
     parser.add_argument("--save-best", default=True, action='store_true',
                         help="Save only the best model during training")
-    parser.add_argument("--save_name", default='version11_wo_mse', action='store_true',
+    parser.add_argument("--save_name", default='FDCA', action='store_true',
                         help="Save only the best model during training")
 
     args = parser.parse_args()
-    if args.dataset.lower() not in ['fashioniq', 'cirr', 'composedvideo']:
-        raise ValueError("Dataset should be either 'CIRR' or 'FashionIQ")
+    if args.dataset.lower() not in ['FineCVR']:
+        raise ValueError("Dataset should be 'FineCVR'")
 
     training_hyper_params = {
         "projection_dim": args.projection_dim,
@@ -305,11 +294,6 @@ if __name__ == '__main__':
     experiment.log_code(folder=str(base_path / 'src'))
     experiment.log_parameters(training_hyper_params)
 
-    if args.dataset.lower() == 'cirr':
-        combiner_training_cirr(**training_hyper_params)
-    elif args.dataset.lower() == 'fashioniq':
-        training_hyper_params.update(
-            {'train_dress_types': ['dress', 'toptee', 'shirt'], 'val_dress_types': ['dress', 'toptee', 'shirt']})
-        combiner_training_fiq(**training_hyper_params)
-    elif args.dataset.lower() == 'composedvideo':
+    
+    if args.dataset.lower() == 'finecvr':
         combiner_training_composedvideo(**training_hyper_params)

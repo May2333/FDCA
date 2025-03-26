@@ -103,7 +103,7 @@ def targetpad_transform(target_ratio: float, dim: int):
 
 class ComposedVideoDataset(Dataset):
     """
-       CIRR dataset class which manage CIRR data
+       FineCVR dataset class which manage FineCVR data
        The dataset can be used in 'relative' or 'classic' mode:
            - In 'classic' mode the dataset yield tuples made of (image_name, image)
            - In 'relative' mode the dataset yield tuples made of:
@@ -121,51 +121,38 @@ class ComposedVideoDataset(Dataset):
                         - (reference_image, target_image, rel_caption) when split == train
                         - (reference_name, target_name, rel_caption, group_members) when split == val
                         - (pair_id, reference_name, rel_caption, group_members) when split == test1
-        :param preprocess: function which preprocesses the image
+        :param dataset_pth: dataset path root
         """
         self.preprocess = preprocess
         self.mode = mode
         self.split = split
 
-        if split not in ['test', 'train', 'val']:
-            raise ValueError("split should be in ['test', 'train', 'val']")
+        if split not in ['train', 'val']:
+            raise ValueError("split should be in ['train', 'val']")
         if mode not in ['relative', 'classic']:
             raise ValueError("mode should be in ['relative', 'classic']")
-        # get triplets made by (reference_image, target_image, relative caption)
+          
         self.dataset_root = dataset_pth
-        self.train_dataset = pd.read_table(os.path.join(self.dataset_root, 'modified_dataset', dataset_op, 'vdo_modified_text_train_clip_cleaned_remaped.txt'), names=['idx', 'ref', 'target', 'cap','source','class_id'], header=None, quoting=csv.QUOTE_NONE)
-        self.val_dataset = pd.read_table(os.path.join(self.dataset_root, 'modified_dataset', dataset_op, 'vdo_modified_text_val_clip_cleaned_remaped.txt'), names=['idx', 'ref', 'target', 'cap','source','class_id'], header=None, quoting=csv.QUOTE_NONE)
-        self.test_dataset = pd.read_table(os.path.join(self.dataset_root, 'modified_dataset', dataset_op, 'vdo_modified_text_test_clip_cleaned_remaped.txt'), names=['idx', 'ref', 'target', 'cap','source','class_id'], header=None, quoting=csv.QUOTE_NONE)
+        self.train_dataset = pd.read_table(os.path.join(self.dataset_root, 'annotations', 'train_remaped.txt'), names=['idx', 'ref', 'target', 'cap','source','class_id'], header=None, quoting=csv.QUOTE_NONE)
+        self.val_dataset = pd.read_table(os.path.join(self.dataset_root, 'annotations', 'test_remaped.txt'), names=['idx', 'ref', 'target', 'cap','source','class_id'], header=None, quoting=csv.QUOTE_NONE)
 
         self.val_member_dict = dict(self.val_dataset.groupby(['ref', 'cap']).groups)
-        self.test_member_dict = dict(self.test_dataset.groupby(['ref', 'cap']).groups)
 
-        for run_tp in ['train', 'val', 'test']:
+        for run_tp in ['train', 'val']:
             for data_tp in ['ref', 'cap', 'target', 'source']:
                 setattr(self, "{}_{}_list".format(run_tp, data_tp), getattr(self,"{}_dataset".format(run_tp))[data_tp].tolist())
 
-        # get a mapping from image name to relative path
-        if self.split == 'test':
-            id2vdoname_pt = os.path.join(self.dataset_root, 'modified_dataset', dataset_op, "id2vdoname_test.json")
+        if self.split == 'val':
+            id2vdoname_pt = os.path.join(self.dataset_root, 'annotations', "id2vdoname_test.json")
         else:
-            id2vdoname_pt = os.path.join(self.dataset_root, 'modified_dataset', dataset_op, "id2vdoname_train_val.json")
+            id2vdoname_pt = os.path.join(self.dataset_root, 'annotations', "id2vdoname_train.json")
         with open(id2vdoname_pt, 'r', encoding='utf-8') as file:
             content = file.read()
             self.id2vdoname = json.loads(content)
+            
+        self.feature_path = os.path.join(self.dataset_root, "CLIP_RN50x4_high_8_640")
+        print(f"FineCVR {split} dataset in {mode} mode initialized")
 
-        # self.feature_path = os.path.join(self.dataset_root, "action_genome_feature_CLIP_Res50x4_8frames_high/")
-
-        # self.ag_feature_path = os.path.join(self.dataset_root, "..", "action_genome_v1.0",
-        #                                     "complete_action_genome_feature_CLIP_Res50x4_8frames_high/")
-        # self.ag_middle_feature_path = os.path.join(self.dataset_root, "..", "action_genome_v1.0",
-        #                                            "complete_action_genome_feature_CLIP_Res50x4_8frames_middle_16_640/")
-        # self.an_feature_path = os.path.join(self.dataset_root, "..", "composed_activity_data",
-        #                                     "an_feature_CLIP_Res50x4_8frames_high/")
-        # self.an_middle_feature_path = os.path.join(self.dataset_root, "..", "composed_activity_data",
-        #                                            "an_feature_CLIP_Res50x4_8frames_middle_16_640/")
-        self.feature_path = os.path.join("/dev/shm/CLIP_RN50x4_high_8_640")
-        print(f"action genome {split} dataset in {mode} mode initialized")
-#         print(f"action genome {split} dataset in {mode} mode initialized")
 
     def remove_neg(self, cap):
         if 'instead of' in cap:
@@ -184,77 +171,25 @@ class ComposedVideoDataset(Dataset):
                     reference_vdo = self.train_ref_list[index]
                     vdo_source = self.train_source_list[index]
                     reference_fea = np.load(os.path.join(self.feature_path, self.id2vdoname[str(reference_vdo)] + '.npy'))
-
-                    # with h5py.File(os.path.join(feature_path, self.id2vdoname[str(reference_vdo)] + '.h5'), 'r') as f:
-                    #     reference_fea =  f['high_feature'][()]
-
-                    reference_middle_fea = np.zeros_like(reference_fea)
-                    target_middle_fea = reference_middle_fea
-                    # with h5py.File(os.path.join(middle_feature_path, self.id2vdoname[str(reference_vdo)] + '.h5'), 'r') as f:
-                    #     reference_middle_fea =  np.array(f['middle_layer_feature'])
+                    
                     rel_caption = self.train_cap_list[index]
 
                     target_vdo = self.train_target_list[index]
                     target_fea=  np.load(os.path.join(self.feature_path, self.id2vdoname[str(target_vdo)] + '.npy'))
-                    # with h5py.File(os.path.join(feature_path, self.id2vdoname[str(target_vdo)] + '.h5'), 'r') as f:
-                    #     target_fea =  f['high_feature'][()]
-                    # target_fea = np.load(os.path.join(self.feature_path, self.id2vdoname[str(target_vdo)]) + '.npy')
-                    # with h5py.File(os.path.join(middle_feature_path, self.id2vdoname[str(target_vdo)] + '.h5'), 'r') as f:
-                    #     target_middle_fea =  np.array(f['middle_layer_feature'])
 
                     return (reference_fea, reference_fea), (target_fea, target_fea), (rel_caption, self.remove_neg(rel_caption))
 
                 elif self.split == 'val':
                     vdo_source = self.val_source_list[index]
-#                     if vdo_source == 'an':
-#                         feature_path = self.an_feature_path
-#                         middle_feature_path = self.an_middle_feature_path
-#                     else:
-#                         feature_path = self.ag_feature_path
-#                         middle_feature_path = self.ag_middle_feature_path
                     reference_name = self.val_ref_list[index]
                     rel_caption = self.val_cap_list[index]
                     target_hard_name = self.val_target_list[index]
-                    # group_members = np.array(self.val_target_list)[self.val_member_dict[(self.val_ref_list[index], self.val_cap_list[index])].values]
-                    # with h5py.File(os.path.join(middle_feature_path, self.id2vdoname[str(reference_name)] + '.h5'), 'r') as f:
-                    #     ref_vdo_fea_middle = np.array(f['middle_layer_feature'])
-                    ref_vdo_fea_middle = 0
-                    return reference_name, target_hard_name, (rel_caption, self.remove_neg(rel_caption)), target_hard_name, ref_vdo_fea_middle
-
-                elif self.split == 'test':
-                    vdo_source = self.test_source_list[index]
-#                     if vdo_source == 'an':
-#                         feature_path = self.an_feature_path
-#                         middle_feature_path = self.an_middle_feature_path
-#                     else:
-#                         feature_path = self.ag_feature_path
-#                         middle_feature_path = self.ag_middle_feature_path
-                    pair_id = index
-                    reference_name = self.test_ref_list[index]
-                    rel_caption = self.test_cap_list[index]
-                    target_hard_name = self.test_target_list[index]
-                    # group_members = np.array(self.test_target_list)[self.test_member_dict[(self.test_ref_list[index], self.test_cap_list[index])].values]
-                    # with h5py.File(os.path.join(middle_feature_path, self.id2vdoname[str(reference_name)] + '.h5'), 'r') as f:
-                    #     ref_vdo_fea_middle = np.array(f['middle_layer_feature'])
                     ref_vdo_fea_middle = 0
                     return reference_name, target_hard_name, (rel_caption, self.remove_neg(rel_caption)), target_hard_name, ref_vdo_fea_middle
 
             elif self.mode == 'classic':
                 vdo_name = self.id2vdoname[str(index)]
-#                 if len(vdo_name)>5:
-#                     feature_path = self.an_feature_path
-#                     middle_feature_path = self.an_middle_feature_path
-#                 else:
-#                     feature_path = self.ag_feature_path
-#                     middle_feature_path = self.ag_middle_feature_path
                 vdo_fea = np.load(os.path.join(self.feature_path, str(vdo_name) + '.npy'))
-
-                # with h5py.File(os.path.join(feature_path, vdo_name + '.h5'),
-                #                'r') as f:
-                #     vdo_fea = f['high_feature'][()]
-                # vdo_fea = np.load(os.path.join(self.feature_path, vdo_name + '.npy'))
-                # im = PIL.Image.open(image_path)
-                # image = self.preprocess(im)
                 return index, vdo_fea
 
             else:
@@ -268,6 +203,5 @@ class ComposedVideoDataset(Dataset):
             return len(getattr(self, "{}_dataset".format(self.split)))
         elif self.mode == 'classic':
             return len(self.id2vdoname)
-            # return 99
         else:
             raise ValueError("mode should be in ['relative', 'classic']")

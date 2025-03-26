@@ -4,7 +4,6 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from collections import OrderedDict
-# from visualizer import get_local
 from pytorch_transformers import BertModel, BertConfig, BertTokenizer
 import cluster
 
@@ -37,7 +36,6 @@ class CrossTransformer(nn.Module):
 
         self.imgs_pos_embedding = nn.Embedding(8, d_model)
         self.words_pos_embedding = nn.Embedding(77, d_model)
-        # self.h_embedding = nn.Embedding(h, int(d_model / 2))
 
     def forward(self, input1, input2, mode='middle', pad_mask=None):
         if len(input1.shape)==2:
@@ -151,19 +149,12 @@ def cluster_dpc_knn(token_dict, cluster_num, k=5, token_mask=None):
 class TokenConv(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=1, bias=False, padding=0):
         super().__init__()
-        # self.proj = nn.Linear(in_channels, out_channels)
-        # self.conv = nn.Conv1d(in_channels=out_channels,
-        #                       out_channels=out_channels,
-        #                       kernel_size=kernel_size, bias=bias,
-        #                       padding=padding)
         self.conv = nn.Conv1d(in_channels=in_channels,
                               out_channels=out_channels,
                               kernel_size=kernel_size, bias=bias,
                               padding=padding)
 
     def forward(self, x):
-        # x = self.proj(x)
-        # x = x + self.conv(x.permute(0, 2, 1)).permute(0, 2, 1)
         x = x + self.conv(x.permute(0, 2, 1)).permute(0, 2, 1)
         return x
 
@@ -235,8 +226,6 @@ class CTM(nn.Module):
         token_score = self.score(x)
         token_weight = token_score.squeeze(2)
         if token_dict["mask"] is not None:
-            # expand_times = token_dict["x"].shape[1] // token_dict["mask"].shape[1]
-            # token_dict["mask"] = token_dict["mask"].unsqueeze(1).repeat(1, 1, expand_times).view(token_dict["mask"].shape[0], -1)
             token_weight.masked_fill_((1 - token_dict["mask"]).to(torch.bool), float("-inf"))
         token_weight = token_weight.unsqueeze(2).exp()
 
@@ -287,7 +276,6 @@ class Combiner(nn.Module):
         self.ctm = CTM(sample_ratio=0.25, embed_dim=clip_feature_dim, dim_out=clip_feature_dim, k=3)
 
     def gumbel_sigmoid(self, logits, tau=1.0):
-        # 计算Gumbel噪声
         gumbel_noise = -torch.log(-torch.log(torch.rand_like(logits) + 1e-10) + 1e-10)
         y = logits + gumbel_noise
         return torch.sigmoid(y / tau)
@@ -327,7 +315,6 @@ class Combiner(nn.Module):
         x = text * mask
         non_zero_indices = torch.nonzero(x)
         x_masked = torch.zeros_like(x).long()
-        # x_masked[non_zero_indices[:, 0], torch.arange(non_zero_indices.shape[0])] = x[non_zero_indices[:, 0], non_zero_indices[:, 1]]
         for i in range(x.shape[0]):
             save_ind_tmp = non_zero_indices[non_zero_indices[:, 0] == i]
             if self.clip_model.end_id-1 not in x[i]:
@@ -339,14 +326,11 @@ class Combiner(nn.Module):
                 x_masked[i, 0:len(save_ind_tmp)] = x[i, save_ind_tmp[:, 1]]
                 if self.clip_model.end_id not in x_masked[i]:
                     x_masked[i, len(save_ind_tmp)] = self.clip_model.end_id
-            # print("len:{}".format(len(save_ind_tmp)/len(text[i].nonzero())-2))
 
         return x_masked
 
     def straight_through_estimator(self, input):
-        # 前向传递：使用四舍五入
         forward_output = torch.round(input)
-        # 反向传递：使用原始输入
         return forward_output + (input - input.detach())
 
     def soft_argmax(self, vector, beta=10):

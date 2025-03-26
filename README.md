@@ -12,42 +12,65 @@ With the explosive growth of video data, finding videos that meet detailed requi
 
 # Installation
 
-```
-conda create -n combiner python==3.8
+## Environment Setup
+```bash
+# Create and activate conda environment
+conda create -n combiner python=3.8 -y
 conda activate combiner
+
+# Install required packages
 pip install -r requirements.txt
 ```
 
 # Data Preparation
 
 ## Directory Structure Setup
-Create the dataset directory with the following structure:
 
-FineCVR/<br>
-├── annotations/<br>
-└── embeddings/<br>
-
-## Annotation Files
-
-Download annotations at: [Download Link](https://drive.google.com/drive/folders/1SneQu9pUhvWmehGxn_Y8YB0JGaa-XfAv?usp=drive_link).
-
-## Embeddings Files
-
-Download embeddings at:[Download Link](https://drive.google.com/drive/folders/1m6zM0udCj8LThWsiMAtsQBFEWAmMucTI?usp=drive_link).
-
-# Training
-Set dataset path environment variable:
+(1) Set dataset path environment variable:
 ```bash
 export FINECVR_DATASET_ROOT=/your/actual/dataset/path
 ```
-Run:
+(2) Download annotation files from [Google Drive](https://drive.google.com/drive/folders/1SneQu9pUhvWmehGxn_Y8YB0JGaa-XfAv?usp=drive_link) and place them in:
 ```
-python combiner_train.py --dataset FineCVR --data_pth $FINECVR_DATASET_ROOT/FineCVR --save-best --save-training
+$FINECVR_DATASET_ROOT/FineCVR/annotations/
+```
+(3) Download pre-extracted CLIP features from [Google Drive](https://drive.google.com/drive/folders/1m6zM0udCj8LThWsiMAtsQBFEWAmMucTI?usp=drive_link):
+```
+# Extract to target directory (ensure tar file is downloaded first)
+tar -xf CLIP_RN50x4_high_8_640.tar -C $FINECVR_DATASET_ROOT/FineCVR/embeddings/
+```
+(4) Final directory structure should be:
+
+$FINECVR_DATASET_ROOT/<br>
+└── FineCVR/<br>
+    ├── annotations/<br>
+    │   ├── train.txt<br>
+    │   ├── test.txt<br>
+	│   ├── train_remaped.txt<br>
+	│   ├── test_remaped.txt<br>
+	│   ├── id2vdoname_train.json<br>
+	│   ├── id2vdoname_test.json<br>
+	│   ├── vdoname2id_train.json<br>
+	│   └── vdoname2id_test.json<br>
+    └── embeddings/<br>
+        └── CLIP_RN50x4_high_8_640/<br>
+
+# Training
+Train FDCA:
+```
+python combiner_train.py \
+    --dataset FineCVR \
+    --data_pth $FINECVR_DATASET_ROOT/FineCVR \
+    --save-best \
+    --save-training
 ```
 
 # Validation
+Validate with pretrained model (ensure model file exists):
 ```
-python src/validate.py --data_pth $FINECVR_DATASET_ROOT/FineCVR --combiner-path FDCA/saved_models/combiner_arithmetic.pt 
+python src/validate.py \
+    --data_pth $FINECVR_DATASET_ROOT/FineCVR \
+    --combiner-path saved_models/combiner_arithmetic.pt  # Update to actual model path
 ```
 
 

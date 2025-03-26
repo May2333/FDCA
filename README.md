@@ -22,17 +22,18 @@ pip install -r requirements.txt
 
 ## Directory Structure Setup
 Create the dataset directory with the following structure:
-FineCVR/
-├── annotations/
-└── embeddings/
+
+FineCVR/<br>
+├── annotations/<br>
+└── embeddings/<br>
 
 ## Annotation Files
 
-[Download Link](https://drive.google.com/drive/folders/1SneQu9pUhvWmehGxn_Y8YB0JGaa-XfAv?usp=drive_link): 
+Download annotations at: [Download Link](https://drive.google.com/drive/folders/1SneQu9pUhvWmehGxn_Y8YB0JGaa-XfAv?usp=drive_link).
 
 ## Embeddings Files
 
-[Download Link](https://drive.google.com/drive/folders/1m6zM0udCj8LThWsiMAtsQBFEWAmMucTI?usp=drive_link): 
+Download embeddings at:[Download Link](https://drive.google.com/drive/folders/1m6zM0udCj8LThWsiMAtsQBFEWAmMucTI?usp=drive_link).
 
 # Training
 Set dataset path environment variable:

@@ -25,8 +25,9 @@ pip install -r requirements.txt
 
 # Data Preparation
 
-## Original Video Frames
-We will upload original video frames as soon as possible.
+## [Optional] Original Video Frames
+
+Our FDCA uses CLIP/BLIP embeddings extracted directly from video frames. The original video frame dataset can be accessed via [Feishu Drive](https://dcn338zwmn1v.feishu.cn/drive/folder/SyTvfxqral7x6HdR0fgcjZKbnJe).
 
 ## Directory Structure Setup
 

@@ -4,6 +4,8 @@ This repo is the official implementation of ICLR 2025 paper "Learning Fine-Grain
 <br>
 By Yue Wu, Zhaobo Qi, Yiling Wu, Junshu Sun, Yaowei Wang, Shuhui Wang
 
+[Project Page](https://may2333.github.io/FineCVR/)
+
 # Introduction
 
 <p style="text-align:justify; text-justify:inter-ideograph;">

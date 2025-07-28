@@ -23,13 +23,16 @@ conda activate combiner
 # Install required packages
 conda install pytorch==1.12.1 torchvision==0.13.1 torchaudio==0.12.1 cudatoolkit=11.3 -c pytorch
 pip install -r requirements.txt
+
+pip install transformers # for fdca_blip
+pip install fairscale # for fdca_blip
 ```
 
 # Data Preparation
 
 ## [Optional] Original Video Frames
 
-Our FDCA uses CLIP/BLIP embeddings extracted directly from video frames. The original video frame dataset can be accessed via [Baidu Drive](https://pan.baidu.com/s/1uSRsdYeOhBVnPLj04cv3ZA?pwd=mwyq).
+Our FDCA uses CLIP/BLIP embeddings extracted directly from video frames. The original video frame dataset can be accessed via [Baidu Drive](https://pan.baidu.com/s/1uSRsdYeOhBVnPLj04cv3ZA?pwd=mwyq) or [OneDrive](https://mailsucasaccn-my.sharepoint.com/:f:/g/personal/wuyue221_mails_ucas_ac_cn/ElAmKxWoTVJBsVGOLHiaK0sB7Qcq07XWxiY4T3IG_JytBw?e=P8uf1p).
 
 ## Directory Structure Setup
 
